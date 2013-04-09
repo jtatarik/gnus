@@ -33,89 +33,89 @@
 ;;; ical-event
 ;;;
 
-(defclass ical-event ()
+(defclass gnus-icalendar-event ()
   ((organizer :initarg :organizer
-              :accessor ical-event:organizer
+              :accessor gnus-icalendar-event:organizer
               :initform ""
               :type (or null string))
    (summary :initarg :summary
-            :accessor ical-event:summary
+            :accessor gnus-icalendar-event:summary
             :initform ""
             :type (or null string))
    (description :initarg :description
-                :accessor ical-event:description
+                :accessor gnus-icalendar-event:description
                 :initform ""
                 :type (or null string))
    (location :initarg :location
-             :accessor ical-event:location
+             :accessor gnus-icalendar-event:location
              :initform ""
              :type (or null string))
    (start :initarg :start
-          :accessor ical-event:start
+          :accessor gnus-icalendar-event:start
           :initform ""
           :type (or null string))
    (end :initarg :end
-        :accessor ical-event:end
+        :accessor gnus-icalendar-event:end
         :initform ""
         :type (or null string))
    (recur :initarg :recur
-          :accessor ical-event:recur
+          :accessor gnus-icalendar-event:recur
           :initform ""
           :type (or null string))
    (uid :initarg :uid
-        :accessor ical-event:uid
+        :accessor gnus-icalendar-event:uid
         :type string)
    (method :initarg :method
-           :accessor ical-event:method
+           :accessor gnus-icalendar-event:method
            :initform "PUBLISH"
            :type (or null string))
    (rsvp :initarg :rsvp
-         :accessor ical-event:rsvp
+         :accessor gnus-icalendar-event:rsvp
          :initform nil
          :type (or null boolean)))
   "generic iCalendar Event class")
 
-(defclass ical-event-request (ical-event)
+(defclass gnus-icalendar-event-request (gnus-icalendar-event)
   nil
   "iCalendar class for REQUEST events")
 
-(defclass ical-event-cancel (ical-event)
+(defclass gnus-icalendar-event-cancel (gnus-icalendar-event)
   nil
   "iCalendar class for CANCEL events")
 
-(defclass ical-event-reply (ical-event)
+(defclass gnus-icalendar-event-reply (gnus-icalendar-event)
   nil
   "iCalendar class for REPLY events")
 
-(defmethod ical-event:recurring-p ((event ical-event))
+(defmethod gnus-icalendar-event:recurring-p ((event gnus-icalendar-event))
   "Return t if EVENT is recurring."
-  (not (null (ical-event:recur event))))
+  (not (null (gnus-icalendar-event:recur event))))
 
-(defmethod ical-event:recurring-freq ((event ical-event))
+(defmethod gnus-icalendar-event:recurring-freq ((event gnus-icalendar-event))
   "Return recurring frequency for EVENT."
-  (let ((rrule (ical-event:recur event)))
+  (let ((rrule (gnus-icalendar-event:recur event)))
     (string-match "FREQ=\\([[:alpha:]]+\\)" rrule)
     (match-string 1 rrule)))
 
-(defmethod ical-event:recurring-interval ((event ical-event))
+(defmethod gnus-icalendar-event:recurring-interval ((event gnus-icalendar-event))
   "Return recurring interval for EVENT."
-  (let ((rrule (ical-event:recur event))
+  (let ((rrule (gnus-icalendar-event:recur event))
         (default-interval 1))
 
     (string-match "INTERVAL=\\([[:digit:]]+\\)" rrule)
     (or (match-string 1 rrule)
         default-interval)))
 
-(defmethod ical-event:start-time ((event ical-event))
+(defmethod gnus-icalendar-event:start-time ((event gnus-icalendar-event))
   "Return time value of the EVENT start date."
-  (date-to-time (ical-event:start event)))
+  (date-to-time (gnus-icalendar-event:start event)))
 
-(defmethod ical-event:end-time ((event ical-event))
+(defmethod gnus-icalendar-event:end-time ((event gnus-icalendar-event))
   "Return time value of the EVENT end date."
-  (date-to-time (ical-event:end event)))
+  (date-to-time (gnus-icalendar-event:end event)))
 
 
-(defun ical-event--decode-datefield (ical field zone-map &optional date-style)
+(defun gnus-icalendar-event--decode-datefield (ical field zone-map &optional date-style)
   (let* ((calendar-date-style (or date-style 'european))
          (date (icalendar--get-event-property ical field))
          (date-zone (icalendar--find-time-zone
@@ -128,7 +128,7 @@
             " "
             (icalendar--datetime-to-colontime date-decoded))))
 
-(defun ical-event--find-attendee (ical name-or-email)
+(defun gnus-icalendar-event--find-attendee (ical name-or-email)
   (let* ((event (car (icalendar--all-events ical)))
          (event-props (caddr event)))
     (cl-labels ((attendee-name (att)
@@ -146,7 +146,7 @@
       (cl-find-if #'attendee-prop-matches event-props))))
 
 
-(defun icalendar->ical-event (ical &optional attendee-name-or-email)
+(defun icalendar->gnus-icalendar-event (ical &optional attendee-name-or-email)
   (let* ((event (car (icalendar--all-events ical)))
          (zone-map (icalendar--convert-all-timezones ical))
          (organizer (replace-regexp-in-string
@@ -159,18 +159,18 @@
                      (uid . UID)))
          (method (third (assoc 'METHOD (third (car (nreverse ical))))))
          (attendee (when attendee-name-or-email
-                     (ical-event--find-attendee ical attendee-name-or-email)))
+                     (gnus-icalendar-event--find-attendee ical attendee-name-or-email)))
          (args (list :method method
                      :organizer organizer
-                     :start (ical-event--decode-datefield event 'DTSTART zone-map)
-                     :end (ical-event--decode-datefield event 'DTEND zone-map)
+                     :start (gnus-icalendar-event--decode-datefield event 'DTSTART zone-map)
+                     :end (gnus-icalendar-event--decode-datefield event 'DTEND zone-map)
                      :rsvp (string= (plist-get (cadr attendee) 'RSVP)
                                     "TRUE")))
          (event-class (pcase method
-                        ("REQUEST" 'ical-event-request)
-                        ("CANCEL" 'ical-event-cancel)
-                        ("REPLY" 'ical-event-reply)
-                        (_ 'ical-event))))
+                        ("REQUEST" 'gnus-icalendar-event-request)
+                        ("CANCEL" 'gnus-icalendar-event-cancel)
+                        ("REPLY" 'gnus-icalendar-event-reply)
+                        (_ 'gnus-icalendar-event))))
 
     (cl-labels ((map-property (prop)
                               (let ((value (icalendar--get-event-property event prop)))
@@ -192,19 +192,19 @@
       (mapc #'accumulate-args prop-map)
       (apply 'make-instance event-class args))))
 
-(defun ical-event-from-buffer (buf &optional attendee-name-or-email)
+(defun gnus-icalendar-event-from-buffer (buf &optional attendee-name-or-email)
   (let ((ical (with-current-buffer (icalendar--get-unfolded-buffer (get-buffer buf))
                 (goto-char (point-min))
                 (icalendar--read-element nil nil))))
 
     (when ical
-      (icalendar->ical-event ical attendee-name-or-email))))
+      (icalendar->gnus-icalendar-event ical attendee-name-or-email))))
 
 ;;;
-;;; ical-event-reply
+;;; gnus-icalendar-event-reply
 ;;;
 
-(defun ical-event--build-reply-event-body (event status identity)
+(defun gnus-icalendar-event--build-reply-event-body (event status identity)
   (let ((summary-status (capitalize (symbol-name status)))
         (attendee-status (upcase (symbol-name status)))
         reply-event-lines)
@@ -249,7 +249,7 @@
                               "END:VEVENT")
                  "\n"))))
 
-(defun ical-event-reply-from-buffer (buf status identity)
+(defun gnus-icalendar-event-reply-from-buffer (buf status identity)
   "Build a calendar event reply for request contained in BUF.
 The reply will have STATUS (`accepted', `tentative' or  `declined').
 The reply will be composed for attendees matching any entry
@@ -276,7 +276,7 @@ on the IDENTITY list."
                               "PRODID:Gnus"
                               "VERSION:2.0"
                               zone
-                              (ical-event--build-reply-event-body event status identity)
+                              (gnus-icalendar-event--build-reply-event-body event status identity)
                               "END:VCALENDAR")))
 
           (mapconcat #'identity (delq nil contents) "\n"))))))
@@ -318,29 +318,29 @@ on the IDENTITY list."
 (defvar gnus-calendar-org-enabled-p nil)
 
 
-(defmethod ical-event:org-repeat ((event ical-event))
+(defmethod gnus-icalendar-event:org-repeat ((event gnus-icalendar-event))
   "Return `org-mode' timestamp repeater string for recurring EVENT.
 Return nil for non-recurring EVENT."
-  (when (ical-event:recurring-p event)
+  (when (gnus-icalendar-event:recurring-p event)
     (let* ((freq-map '(("HOURLY" . "h")
                        ("DAILY" . "d")
                        ("WEEKLY" . "w")
                        ("MONTHLY" . "m")
                        ("YEARLY" . "y")))
-           (org-freq (cdr (assoc (ical-event:recurring-freq event) freq-map))))
+           (org-freq (cdr (assoc (gnus-icalendar-event:recurring-freq event) freq-map))))
 
       (when org-freq
-        (format "+%s%s" (ical-event:recurring-interval event) org-freq)))))
+        (format "+%s%s" (gnus-icalendar-event:recurring-interval event) org-freq)))))
 
-(defmethod ical-event:org-timestamp ((event ical-event))
+(defmethod gnus-icalendar-event:org-timestamp ((event gnus-icalendar-event))
   "Build `org-mode' timestamp from EVENT start/end dates and recurrence info."
-  (let* ((start (ical-event:start-time event))
-         (end (ical-event:end-time event))
+  (let* ((start (gnus-icalendar-event:start-time event))
+         (end (gnus-icalendar-event:end-time event))
          (start-date (format-time-string "%Y-%m-%d %a" start t))
          (start-time (format-time-string "%H:%M" start t))
          (end-date (format-time-string "%Y-%m-%d %a" end t))
          (end-time (format-time-string "%H:%M" end t))
-         (org-repeat (ical-event:org-repeat event))
+         (org-repeat (gnus-icalendar-event:org-repeat event))
          (repeat (if org-repeat (concat " " org-repeat) "")))
 
     (if (equal start-date end-date)
@@ -348,7 +348,7 @@ Return nil for non-recurring EVENT."
       (format "<%s %s>--<%s %s>" start-date start-time end-date end-time))))
 
 ;; TODO: make the template customizable
-(defmethod ical-event->org-entry ((event ical-event) reply-status)
+(defmethod gnus-icalendar-event->org-entry ((event gnus-icalendar-event) reply-status)
   "Return string with new `org-mode' entry describing EVENT."
   (with-temp-buffer
     (org-mode)
@@ -358,10 +358,10 @@ Return nil for non-recurring EVENT."
                       "Not replied yet"))
              (props `(("ICAL_EVENT" . "t")
                       ("ID" . ,uid)
-                      ("DT" . ,(ical-event:org-timestamp event))
-                      ("ORGANIZER" . ,(ical-event:organizer event))
-                      ("LOCATION" . ,(ical-event:location event))
-                      ("RRULE" . ,(ical-event:recur event))
+                      ("DT" . ,(gnus-icalendar-event:org-timestamp event))
+                      ("ORGANIZER" . ,(gnus-icalendar-event:organizer event))
+                      ("LOCATION" . ,(gnus-icalendar-event:location event))
+                      ("RRULE" . ,(gnus-icalendar-event:recur event))
                       ("REPLY" . ,reply))))
 
         (insert (format "* %s (%s)\n\n" summary location))
@@ -385,7 +385,7 @@ Return nil for non-recurring EVENT."
 (defun gnus-calendar--show-org-event (event org-file)
   (let (event-pos)
     (with-current-buffer (find-file-noselect org-file)
-      (setq event-pos (org-find-entry-with-id (ical-event:uid event))))
+      (setq event-pos (org-find-entry-with-id (gnus-icalendar-event:uid event))))
     (when event-pos
       (switch-to-buffer (find-file org-file))
       (goto-char event-pos)
@@ -426,7 +426,7 @@ Return nil for non-recurring EVENT."
               (insert description "\n")
               (indent-region (point-min) (point-max) (1+ entry-outline-level))
               (fill-region (point-min) (point-max)))
-            (org-entry-put event-pos "DT" (ical-event:org-timestamp event))
+            (org-entry-put event-pos "DT" (gnus-icalendar-event:org-timestamp event))
             (org-entry-put event-pos "ORGANIZER" organizer)
             (org-entry-put event-pos "LOCATION" location)
             (org-entry-put event-pos "RRULE" recur)
@@ -436,7 +436,7 @@ Return nil for non-recurring EVENT."
 
 (defun gnus-calendar--cancel-org-event (event org-file)
   (with-current-buffer (find-file-noselect org-file)
-    (let ((event-pos (org-find-entry-with-id (ical-event:uid event))))
+    (let ((event-pos (org-find-entry-with-id (gnus-icalendar-event:uid event))))
       (when event-pos
         (let ((ts (org-entry-get event-pos "DT")))
           (when ts
@@ -444,7 +444,7 @@ Return nil for non-recurring EVENT."
             (save-buffer)))))))
 
 (defun gnus-calendar--get-org-event-reply-status (event org-file)
-  (let ((id (ical-event:uid event)))
+  (let ((id (gnus-icalendar-event:uid event)))
     (when (gnus-calendar-org-event-exists-p id org-file)
       (save-excursion
         (with-current-buffer (find-file-noselect org-file)
@@ -483,7 +483,7 @@ Return nil for non-recurring EVENT."
 
 (defun gnus-calendar:org-event-save (event reply-status)
   (with-temp-buffer
-    (org-capture-string (ical-event->org-entry event reply-status)
+    (org-capture-string (gnus-icalendar-event->org-entry event reply-status)
                         gnus-calendar-org-template-key)))
 
 (defun gnus-calendar:org-event-update (event reply-status)
@@ -493,15 +493,15 @@ Return nil for non-recurring EVENT."
   (gnus-calendar--cancel-org-event event gnus-calendar-org-capture-file))
 
 (defun gnus-calendar:org-entry-exists-p (event)
-  (gnus-calendar-org-event-exists-p (ical-event:uid event)
+  (gnus-calendar-org-event-exists-p (gnus-icalendar-event:uid event)
                                     gnus-calendar-org-capture-file))
 
 (defun gnus-calendar-show-org-entry (event)
   (gnus-calendar--show-org-event event gnus-calendar-org-capture-file))
 
 (defun gnus-calendar-show-org-agenda (event)
-  (let* ((time-delta (time-subtract (ical-event:end-time event)
-                                    (ical-event:start-time event)))
+  (let* ((time-delta (time-subtract (gnus-icalendar-event:end-time event)
+                                    (gnus-icalendar-event:start-time event)))
          (duration-days (1+ (/ (+ (* (first time-delta) (expt 2 16))
                                   (second time-delta))
                                86400))))
@@ -511,14 +511,14 @@ Return nil for non-recurring EVENT."
 (defun gnus-calendar:org-event-reply-status (event)
   (gnus-calendar--get-org-event-reply-status event gnus-calendar-org-capture-file))
 
-(defmethod cal-event:sync-to-org ((event ical-event-request) reply-status)
-  (if (gnus-calendar-org-event-exists-p (ical-event:uid event) gnus-calendar-org-capture-file)
+(defmethod cal-event:sync-to-org ((event gnus-icalendar-event-request) reply-status)
+  (if (gnus-calendar-org-event-exists-p (gnus-icalendar-event:uid event) gnus-calendar-org-capture-file)
       (gnus-calendar:org-event-update event reply-status)
     (gnus-calendar:org-event-save event reply-status)))
 
-(defmethod cal-event:sync-to-org ((event ical-event-cancel))
+(defmethod cal-event:sync-to-org ((event gnus-icalendar-event-cancel))
   (when (gnus-calendar-org-event-exists-p
-         (ical-event:uid event) gnus-calendar-org-capture-file)
+         (gnus-icalendar-event:uid event) gnus-calendar-org-capture-file)
     (gnus-calendar:org-event-cancel event)))
 
 (defun gnus-calendar-org-setup ()
@@ -558,16 +558,16 @@ Return nil for non-recurring EVENT."
                    gnus-ignored-from-addresses)))
 
 ;; TODO: make the template customizable
-(defmethod ical-event->gnus-calendar ((event ical-event) &optional reply-status)
+(defmethod gnus-icalendar-event->gnus-calendar ((event gnus-icalendar-event) &optional reply-status)
   "Format an overview of EVENT details."
   (with-slots (organizer summary description location recur uid method rsvp) event
     (let ((headers `(("Summary" ,summary)
                      ("Location" ,location)
-                     ("Time" ,(ical-event:org-timestamp event))
+                     ("Time" ,(gnus-icalendar-event:org-timestamp event))
                      ("Organizer" ,organizer)
                      ("Method" ,method))))
 
-      (when (and (not (ical-event-reply-p event)) rsvp)
+      (when (and (not (gnus-icalendar-event-reply-p event)) rsvp)
         (setq headers (append headers
                               `(("Status" ,(or reply-status "Not replied yet"))))))
 
@@ -592,9 +592,9 @@ Return nil for non-recurring EVENT."
          ,@body))))
 
 
-(defun ical-event-from-handle (handle &optional attendee-name-or-email)
+(defun gnus-icalendar-event-from-handle (handle &optional attendee-name-or-email)
   (with-decoded-handle handle
-                       (ical-event-from-buffer (current-buffer) attendee-name-or-email)))
+                       (gnus-icalendar-event-from-buffer (current-buffer) attendee-name-or-email)))
 
 (defun gnus-calendar-insert-button (text callback data)
   ;; FIXME: the gnus-mime-button-map keymap does not make sense for this kind
@@ -630,7 +630,7 @@ Return nil for non-recurring EVENT."
          (status (second data))
          (event (third data))
          (reply (with-decoded-handle handle
-                                     (ical-event-reply-from-buffer (current-buffer)
+                                     (gnus-icalendar-event-reply-from-buffer (current-buffer)
                                                                    status gnus-calendar-identities))))
 
     (when reply
@@ -640,7 +640,7 @@ Return nil for non-recurring EVENT."
                                          (replace-match "\\1\n \\2")
                                          (goto-char (line-beginning-position)))))
         (let ((subject (concat (capitalize (symbol-name status))
-                               ": " (ical-event:summary event))))
+                               ": " (gnus-icalendar-event:summary event))))
 
           (with-current-buffer (get-buffer-create gnus-calendar-reply-bufname)
             (delete-region (point-min) (point-max))
@@ -660,7 +660,7 @@ Return nil for non-recurring EVENT."
   (cal-event:sync-to-org event gnus-calendar-reply-status))
 
 (defun gnus-calendar-mm-inline (handle)
-  (let ((event (ical-event-from-handle handle gnus-calendar-identities))
+  (let ((event (gnus-icalendar-event-from-handle handle gnus-calendar-identities))
         (reply-status "Not replied yet")
         reply-buttons
         org-buttons)
@@ -668,8 +668,8 @@ Return nil for non-recurring EVENT."
     (setq gnus-calendar-reply-status nil)
 
     (when event
-      (when (and (not (ical-event-reply-p event))
-                 (ical-event:rsvp event))
+      (when (and (not (gnus-icalendar-event-reply-p event))
+                 (gnus-icalendar-event:rsvp event))
         (when gnus-calendar-org-enabled-p
           (setq reply-status (or (gnus-calendar:org-event-reply-status event)
                                  reply-status)))
@@ -686,7 +686,7 @@ Return nil for non-recurring EVENT."
           (setq org-buttons (append org-buttons
                                     `(("Show Agenda" gnus-calendar-show-org-agenda ,event))))
 
-          (when (ical-event-request-p event)
+          (when (gnus-icalendar-event-request-p event)
             (setq org-buttons (append org-buttons
                                       `((,export-button-text gnus-calendar-sync-event-to-org ,event)))))
           (when org-entry-exists-p
@@ -706,12 +706,12 @@ Return nil for non-recurring EVENT."
 
       (setq gnus-calendar-event event
             gnus-calendar-handle handle)
-      (insert (ical-event->gnus-calendar event reply-status)))))
+      (insert (gnus-icalendar-event->gnus-calendar event reply-status)))))
 
 (defun gnus-calendar-save-part (handle)
   (let (event)
     (when (and (equal (car (mm-handle-type handle)) "text/calendar")
-               (setq event (ical-event-from-handle handle gnus-calendar-identities)))
+               (setq event (gnus-icalendar-event-from-handle handle gnus-calendar-identities)))
 
       (cal-event:sync-to-org event))))
 
