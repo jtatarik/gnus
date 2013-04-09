@@ -28,6 +28,7 @@
 (require 'eieio)
 (require 'mm-decode)
 (require 'gnus-sum)
+(require 'gmm-utils)
 
 ;;;
 ;;; ical-event
@@ -131,7 +132,7 @@
 (defun gnus-icalendar-event--find-attendee (ical name-or-email)
   (let* ((event (car (icalendar--all-events ical)))
          (event-props (caddr event)))
-    (cl-labels ((attendee-name (att)
+    (gmm-labels ((attendee-name (att)
                                (plist-get (cadr att) 'CN))
                 (attendee-email (att)
                                 (replace-regexp-in-string "^.*MAILTO:" "" (caddr att)))
@@ -172,7 +173,7 @@
                         ("REPLY" 'gnus-icalendar-event-reply)
                         (_ 'gnus-icalendar-event))))
 
-    (cl-labels ((map-property (prop)
+    (gmm-labels ((map-property (prop)
                               (let ((value (icalendar--get-event-property event prop)))
                                 (when value
                                   ;; ugly, but cannot get
@@ -208,7 +209,7 @@
   (let ((summary-status (capitalize (symbol-name status)))
         (attendee-status (upcase (symbol-name status)))
         reply-event-lines)
-    (cl-labels ((update-summary (line)
+    (gmm-labels ((update-summary (line)
                                 (if (string-match "^[^:]+:" line)
                                     (replace-match (format "\\&%s: " summary-status) t nil line)
                                   line))
@@ -254,7 +255,7 @@
 The reply will have STATUS (`accepted', `tentative' or  `declined').
 The reply will be composed for attendees matching any entry
 on the IDENTITY list."
-  (cl-flet ((extract-block (blockname)
+  (gmm-flet ((extract-block (blockname)
                            (save-excursion
                              (let ((block-start-re (format "^BEGIN:%s" blockname))
                                    (block-end-re (format "^END:%s" blockname))
@@ -634,7 +635,7 @@ Return nil for non-recurring EVENT."
                                                                    status gnus-calendar-identities))))
 
     (when reply
-      (cl-flet ((fold-icalendar-buffer ()
+      (gmm-flet ((fold-icalendar-buffer ()
                                        (goto-char (point-min))
                                        (while (re-search-forward "^\\(.\\{72\\}\\)\\(.+\\)$" nil t)
                                          (replace-match "\\1\n \\2")
@@ -693,7 +694,7 @@ Return nil for non-recurring EVENT."
             (setq org-buttons (append org-buttons
                                       `(("Show Org Entry" gnus-calendar-show-org-entry ,event)))))))
 
-      (cl-flet ((insert-button-group (buttons)
+      (gmm-flet ((insert-button-group (buttons)
                                      (when buttons
                                        (mapc (lambda (x)
                                                (apply 'gnus-calendar-insert-button x)
