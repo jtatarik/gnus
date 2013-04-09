@@ -92,13 +92,13 @@
   (not (null (gnus-icalendar-event:recur event))))
 
 (defmethod gnus-icalendar-event:recurring-freq ((event gnus-icalendar-event))
-  "Return recurring frequency for EVENT."
+  "Return recurring frequency of EVENT."
   (let ((rrule (gnus-icalendar-event:recur event)))
     (string-match "FREQ=\\([[:alpha:]]+\\)" rrule)
     (match-string 1 rrule)))
 
 (defmethod gnus-icalendar-event:recurring-interval ((event gnus-icalendar-event))
-  "Return recurring interval for EVENT."
+  "Return recurring interval of EVENT."
   (let ((rrule (gnus-icalendar-event:recur event))
         (default-interval 1))
 
