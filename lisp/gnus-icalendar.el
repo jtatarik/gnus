@@ -553,10 +553,11 @@ Return nil for non-recurring EVENT."
  (defvar gnus-calendar-handle nil))
 
 (defvar gnus-calendar-identities
-  (cl-mapcan (lambda (x) (if (listp x) x (list x)))
-             (list user-full-name (regexp-quote user-mail-address)
-                   ; NOTE: this one can be a list
-                   gnus-ignored-from-addresses)))
+  (apply #'append
+         (mapcar (lambda (x) (if (listp x) x (list x)))
+                 (list user-full-name (regexp-quote user-mail-address)
+                       ; NOTE: this one can be a list
+                       gnus-ignored-from-addresses))))
 
 ;; TODO: make the template customizable
 (defmethod gnus-icalendar-event->gnus-calendar ((event gnus-icalendar-event) &optional reply-status)
