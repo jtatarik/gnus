@@ -30,6 +30,12 @@
 (require 'gnus-sum)
 (require 'gmm-utils)
 
+
+(defun gnus-calendar-find-if (pred seq)
+  (when seq
+    (or (when (funcall pred (car seq)) (car seq))
+        (gnus-calendar-find-if pred (cdr seq)))))
+
 ;;;
 ;;; ical-event
 ;;;
@@ -140,11 +146,11 @@
                                        (and (eq (car prop) 'ATTENDEE)
                                             (or (member (attendee-name prop) name-or-email)
                                                 (let ((att-email (attendee-email prop)))
-                                                  (cl-find-if (lambda (email)
+                                                  (gnus-calendar-find-if (lambda (email)
                                                                 (string-match email att-email))
                                                               name-or-email))))))
 
-      (cl-find-if #'attendee-prop-matches event-props))))
+      (gnus-calendar-find-if #'attendee-prop-matches event-props))))
 
 
 (defun icalendar->gnus-icalendar-event (ical &optional attendee-name-or-email)
@@ -216,7 +222,7 @@
                 (update-dtstamp ()
                                 (format-time-string "DTSTAMP:%Y%m%dT%H%M%SZ" nil t))
                 (attendee-matches-identity (line)
-                                           (cl-find-if (lambda (name) (string-match-p name line))
+                                           (gnus-calendar-find-if (lambda (name) (string-match-p name line))
                                                        identity))
                 (update-attendee-status (line)
                                         (when (and (attendee-matches-identity line)
@@ -241,7 +247,7 @@
 
       (mapc #'process-event-line (split-string event "\n"))
 
-      (unless (cl-find-if (lambda (x) (string-match "^ATTENDEE" x))
+      (unless (gnus-calendar-find-if (lambda (x) (string-match "^ATTENDEE" x))
                           reply-event-lines)
         (error "Could not find an event attendee matching given identity"))
 
@@ -461,9 +467,8 @@ Return nil for non-recurring EVENT."
           (string= (cdr (assoc "ICAL_EVENT" (org-entry-properties event-pos)))
                    "t"))))))
 
-
 (defun gnus-calendar-insinuate-org-templates ()
-  (unless (cl-find-if (lambda (x) (string= (second x) gnus-calendar-org-template-name))
+  (unless (gnus-calendar-find-if (lambda (x) (string= (second x) gnus-calendar-org-template-name))
                       org-capture-templates)
     (setq org-capture-templates
           (append `((,gnus-calendar-org-template-key
