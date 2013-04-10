@@ -512,7 +512,7 @@ Return nil for non-recurring EVENT."
                                   (second time-delta))
                                86400))))
 
-    (org-agenda-list nil start duration-days)))
+    (org-agenda-list nil (gnus-icalendar-event:start event) duration-days)))
 
 (defun gnus-calendar:org-event-reply-status (event)
   (gnus-calendar--get-org-event-reply-status event gnus-calendar-org-capture-file))
