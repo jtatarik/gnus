@@ -210,41 +210,41 @@
 ;;; gnus-icalendar-event-reply
 ;;;
 
-(defun gnus-icalendar-event--build-reply-event-body (event status identity)
+(defun gnus-icalendar-event--build-reply-event-body (ical-request status identity)
   (let ((summary-status (capitalize (symbol-name status)))
         (attendee-status (upcase (symbol-name status)))
         reply-event-lines)
     (gmm-labels ((update-summary (line)
-                                (if (string-match "^[^:]+:" line)
-                                    (replace-match (format "\\&%s: " summary-status) t nil line)
-                                  line))
-                (update-dtstamp ()
-                                (format-time-string "DTSTAMP:%Y%m%dT%H%M%SZ" nil t))
-                (attendee-matches-identity (line)
-                                           (gnus-icalendar-find-if (lambda (name) (string-match-p name line))
-                                                       identity))
-                (update-attendee-status (line)
-                                        (when (and (attendee-matches-identity line)
-                                                   (string-match "\\(PARTSTAT=\\)[^;]+" line))
-                                          (replace-match (format "\\1%s" attendee-status) t nil line)))
-                (process-event-line (line)
-                                    (when (string-match "^\\([^;:]+\\)" line)
-                                      (let* ((key (match-string 0 line))
-                                             ;; NOTE: not all of the below fields are mandatory,
-                                             ;; but they are present in MS Exchange replies. Need
-                                             ;; to test with minimalistic setup, too.
-                                             (new-line (pcase key
-                                                         ("ATTENDEE" (update-attendee-status line))
-                                                         ("SUMMARY" (update-summary line))
-                                                         ("DTSTAMP" (update-dtstamp))
-                                                         ((or "ORGANIZER" "DTSTART" "DTEND"
-                                                              "LOCATION" "DURATION" "SEQUENCE"
-                                                              "RECURRENCE-ID" "UID") line)
-                                                         (_ nil))))
-                                        (when new-line
-                                          (push new-line reply-event-lines))))))
+                   (if (string-match "^[^:]+:" line)
+                       (replace-match (format "\\&%s: " summary-status) t nil line)
+                     line))
+                 (update-dtstamp ()
+                   (format-time-string "DTSTAMP:%Y%m%dT%H%M%SZ" nil t))
+                 (attendee-matches-identity (line)
+                   (gnus-icalendar-find-if (lambda (name) (string-match-p name line))
+                                           identity))
+                 (update-attendee-status (line)
+                   (when (and (attendee-matches-identity line)
+                              (string-match "\\(PARTSTAT=\\)[^;]+" line))
+                     (replace-match (format "\\1%s" attendee-status) t nil line)))
+                 (process-event-line (line)
+                   (when (string-match "^\\([^;:]+\\)" line)
+                     (let* ((key (match-string 0 line))
+                            ;; NOTE: not all of the below fields are mandatory,
+                            ;; but they are often present in other clients'
+                            ;; replies. Can be helpful for debugging, too.
+                            (new-line (pcase key
+                                        ("ATTENDEE" (update-attendee-status line))
+                                        ("SUMMARY" (update-summary line))
+                                        ("DTSTAMP" (update-dtstamp))
+                                        ((or "ORGANIZER" "DTSTART" "DTEND"
+                                             "LOCATION" "DURATION" "SEQUENCE"
+                                             "RECURRENCE-ID" "UID") line)
+                                        (_ nil))))
+                       (when new-line
+                         (push new-line reply-event-lines))))))
 
-      (mapc #'process-event-line (split-string event "\n"))
+      (mapc #'process-event-line (split-string ical-request "\n"))
 
       (unless (gnus-icalendar-find-if (lambda (x) (string-match "^ATTENDEE" x))
                           reply-event-lines)
@@ -261,14 +261,14 @@ The reply will have STATUS (`accepted', `tentative' or  `declined').
 The reply will be composed for attendees matching any entry
 on the IDENTITY list."
   (gmm-flet ((extract-block (blockname)
-                           (save-excursion
-                             (let ((block-start-re (format "^BEGIN:%s" blockname))
-                                   (block-end-re (format "^END:%s" blockname))
-                                   start)
-                               (when (re-search-forward block-start-re nil t)
-                                 (setq start (line-beginning-position))
-                                 (re-search-forward block-end-re)
-                                 (buffer-substring-no-properties start (line-end-position)))))))
+               (save-excursion
+                 (let ((block-start-re (format "^BEGIN:%s" blockname))
+                       (block-end-re (format "^END:%s" blockname))
+                       start)
+                   (when (re-search-forward block-start-re nil t)
+                     (setq start (line-beginning-position))
+                     (re-search-forward block-end-re)
+                     (buffer-substring-no-properties start (line-end-position)))))))
 
     (let (zone event)
       (with-current-buffer (icalendar--get-unfolded-buffer (get-buffer buf))
