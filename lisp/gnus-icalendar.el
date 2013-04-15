@@ -138,19 +138,18 @@
 (defun gnus-icalendar-event--find-attendee (ical name-or-email)
   (let* ((event (car (icalendar--all-events ical)))
          (event-props (caddr event)))
-    (gmm-labels ((attendee-name (att)
-                               (plist-get (cadr att) 'CN))
-                (attendee-email (att)
-                                (replace-regexp-in-string "^.*MAILTO:" "" (caddr att)))
-                (attendee-prop-matches (prop)
-                                       (and (eq (car prop) 'ATTENDEE)
-                                            (or (member (attendee-name prop) name-or-email)
-                                                (let ((att-email (attendee-email prop)))
-                                                  (gnus-icalendar-find-if (lambda (email)
-                                                                (string-match email att-email))
-                                                              name-or-email))))))
+    (gmm-labels ((attendee-name (att) (plist-get (cadr att) 'CN))
+                 (attendee-email (att)
+                   (replace-regexp-in-string "^.*MAILTO:" "" (caddr att)))
+                 (attendee-prop-matches-p (prop)
+                   (and (eq (car prop) 'ATTENDEE)
+                        (or (member (attendee-name prop) name-or-email)
+                            (let ((att-email (attendee-email prop)))
+                              (gnus-icalendar-find-if (lambda (email)
+                                                        (string-match email att-email))
+                                                      name-or-email))))))
 
-      (gnus-icalendar-find-if #'attendee-prop-matches event-props))))
+      (gnus-icalendar-find-if #'attendee-prop-matches-p event-props))))
 
 
 (defun icalendar->gnus-icalendar-event (ical &optional attendee-name-or-email)
@@ -180,21 +179,21 @@
                         (_ 'gnus-icalendar-event))))
 
     (gmm-labels ((map-property (prop)
-                              (let ((value (icalendar--get-event-property event prop)))
-                                (when value
-                                  ;; ugly, but cannot get
-                                  ;;replace-regexp-in-string work with "\\" as
-                                  ;;REP, plus we should also handle "\\;"
-                                  (replace-regexp-in-string
-                                   "\\\\," ","
-                                   (replace-regexp-in-string
-                                    "\\\\n" "\n" (substring-no-properties value))))))
-                (accumulate-args (mapping)
-                                 (destructuring-bind (slot . ical-property) mapping
-                                   (setq args (append (list
-                                                       (intern (concat ":" (symbol-name slot)))
-                                                       (map-property ical-property))
-                                                      args)))))
+                   (let ((value (icalendar--get-event-property event prop)))
+                     (when value
+                       ;; ugly, but cannot get
+                       ;;replace-regexp-in-string work with "\\" as
+                       ;;REP, plus we should also handle "\\;"
+                       (replace-regexp-in-string
+                        "\\\\," ","
+                        (replace-regexp-in-string
+                         "\\\\n" "\n" (substring-no-properties value))))))
+                 (accumulate-args (mapping)
+                   (destructuring-bind (slot . ical-property) mapping
+                     (setq args (append (list
+                                         (intern (concat ":" (symbol-name slot)))
+                                         (map-property ical-property))
+                                        args)))))
 
       (mapc #'accumulate-args prop-map)
       (apply 'make-instance event-class args))))
