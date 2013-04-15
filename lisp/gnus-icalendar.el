@@ -163,7 +163,7 @@
                      (location . LOCATION)
                      (recur . RRULE)
                      (uid . UID)))
-         (method (third (assoc 'METHOD (third (car (nreverse ical))))))
+         (method (caddr (assoc 'METHOD (caddr (car (nreverse ical))))))
          (attendee (when attendee-name-or-email
                      (gnus-icalendar-event--find-attendee ical attendee-name-or-email)))
          (args (list :method method
@@ -467,7 +467,7 @@ Return nil for non-recurring EVENT."
                    "t"))))))
 
 (defun gnus-icalendar-insinuate-org-templates ()
-  (unless (gnus-icalendar-find-if (lambda (x) (string= (second x) gnus-icalendar-org-template-name))
+  (unless (gnus-icalendar-find-if (lambda (x) (string= (cadr x) gnus-icalendar-org-template-name))
                       org-capture-templates)
     (setq org-capture-templates
           (append `((,gnus-icalendar-org-template-key
@@ -507,8 +507,8 @@ Return nil for non-recurring EVENT."
 (defun gnus-icalendar-show-org-agenda (event)
   (let* ((time-delta (time-subtract (gnus-icalendar-event:end-time event)
                                     (gnus-icalendar-event:start-time event)))
-         (duration-days (1+ (/ (+ (* (first time-delta) (expt 2 16))
-                                  (second time-delta))
+         (duration-days (1+ (/ (+ (* (car time-delta) (expt 2 16))
+                                  (cadr time-delta))
                                86400))))
 
     (org-agenda-list nil (gnus-icalendar-event:start event) duration-days)))
@@ -632,9 +632,9 @@ Return nil for non-recurring EVENT."
       (message-send-and-exit))))
 
 (defun gnus-icalendar-reply (data)
-  (let* ((handle (first data))
-         (status (second data))
-         (event (third data))
+  (let* ((handle (car data))
+         (status (cadr data))
+         (event (caddr data))
          (reply (with-decoded-handle handle
                                      (gnus-icalendar-event-reply-from-buffer (current-buffer)
                                                                    status gnus-icalendar-identities))))
