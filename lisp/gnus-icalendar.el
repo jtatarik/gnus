@@ -673,54 +673,62 @@ Return nil for non-recurring EVENT."
 (defun gnus-icalendar-sync-event-to-org (event)
   (cal-event:sync-to-org event gnus-icalendar-reply-status))
 
+(defmethod gnus-icalendar:inline-reply-buttons ((event gnus-icalendar-event))
+  (when (gnus-icalendar-event:rsvp event)
+    `(("Accept" gnus-icalendar-reply (,handle accepted ,event))
+      ("Tentative" gnus-icalendar-reply (,handle tentative ,event))
+      ("Decline" gnus-icalendar-reply (,handle declined ,event)))))
+
+(defmethod gnus-icalendar:inline-reply-buttons ((event gnus-icalendar-event-reply))
+  "No buttons for REPLY events."
+  nil)
+
+(defmethod gnus-icalendar:inline-reply-status ((event gnus-icalendar-event))
+  (or (when gnus-icalendar-org-enabled-p
+        (gnus-icalendar:org-event-reply-status event))
+      "Not replied yet"))
+
+(defmethod gnus-icalendar:inline-reply-status ((event gnus-icalendar-event-reply))
+  "No reply status for REPLY events."
+  nil)
+
+
+(defmethod gnus-icalendar:inline-org-buttons ((event gnus-icalendar-event))
+  (let* ((org-entry-exists-p (gnus-icalendar:org-entry-exists-p event))
+         (export-button-text (if org-entry-exists-p "Update Org Entry" "Export to Org")))
+
+    (delq nil (list
+               `("Show Agenda" gnus-icalendar-show-org-agenda ,event)
+               (when (gnus-icalendar-event-request-p event)
+                 `(,export-button-text gnus-icalendar-sync-event-to-org ,event))
+               (when org-entry-exists-p
+                 `("Show Org Entry" gnus-icalendar-show-org-entry ,event))))))
+
 (defun gnus-icalendar-mm-inline (handle)
-  (let ((event (gnus-icalendar-event-from-handle handle gnus-icalendar-identities))
-        (reply-status "Not replied yet")
-        reply-buttons
-        org-buttons)
+  (let ((event (gnus-icalendar-event-from-handle handle gnus-icalendar-identities)))
 
     (setq gnus-icalendar-reply-status nil)
 
     (when event
-      (when (and (not (gnus-icalendar-event-reply-p event))
-                 (gnus-icalendar-event:rsvp event))
-        (when gnus-icalendar-org-enabled-p
-          (setq reply-status (or (gnus-icalendar:org-event-reply-status event)
-                                 reply-status)))
-
-        (setq reply-buttons
-              `(("Accept" gnus-icalendar-reply (,handle accepted ,event))
-                ("Tentative" gnus-icalendar-reply (,handle tentative ,event))
-                ("Decline" gnus-icalendar-reply (,handle declined ,event)))))
-
-      (when gnus-icalendar-org-enabled-p
-        (let* ((org-entry-exists-p (gnus-icalendar:org-entry-exists-p event))
-               (export-button-text (if org-entry-exists-p "Update Org Entry" "Export to Org")))
-
-          (setq org-buttons (append org-buttons
-                                    `(("Show Agenda" gnus-icalendar-show-org-agenda ,event))))
-
-          (when (gnus-icalendar-event-request-p event)
-            (setq org-buttons (append org-buttons
-                                      `((,export-button-text gnus-icalendar-sync-event-to-org ,event)))))
-          (when org-entry-exists-p
-            (setq org-buttons (append org-buttons
-                                      `(("Show Org Entry" gnus-icalendar-show-org-entry ,event)))))))
-
       (gmm-flet ((insert-button-group (buttons)
-                                     (when buttons
-                                       (mapc (lambda (x)
-                                               (apply 'gnus-icalendar-insert-button x)
-                                               (insert "    "))
-                                             buttons)
-                                       (insert "\n\n"))))
+                   (when buttons
+                     (mapc (lambda (x)
+                             (apply 'gnus-icalendar-insert-button x)
+                             (insert "    "))
+                           buttons)
+                     (insert "\n\n"))))
 
-        (insert-button-group reply-buttons)
-        (insert-button-group org-buttons))
+        (insert-button-group (gnus-icalendar:inline-reply-buttons event))
 
-      (setq gnus-icalendar-event event
-            gnus-icalendar-handle handle)
-      (insert (gnus-icalendar-event->gnus-calendar event reply-status)))))
+        (when gnus-icalendar-org-enabled-p
+          (insert-button-group (gnus-icalendar:inline-org-buttons event)))
+
+        (setq gnus-icalendar-event event
+              gnus-icalendar-handle handle)
+
+        (insert (gnus-icalendar-event->gnus-calendar
+                 event
+                 (gnus-icalendar:inline-reply-status event)))))))
 
 (defun gnus-icalendar-save-part (handle)
   (let (event)
