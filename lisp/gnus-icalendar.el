@@ -199,6 +199,14 @@
       (apply 'make-instance event-class args))))
 
 (defun gnus-icalendar-event-from-buffer (buf &optional attendee-name-or-email)
+  "Parse RFC5545 iCalendar in buffer BUF and return an event object.
+
+Return a gnus-icalendar-event object representing the first event
+contained in the invitation. Return nil for calendars without an event entry.
+
+ATTENDEE-NAME-OR-EMAIL is a list of strings that will be matched
+against the event's attendee names and emails. Invitation rsvp
+status will be retrieved from the first matching attendee record."
   (let ((ical (with-current-buffer (icalendar--get-unfolded-buffer (get-buffer buf))
                 (goto-char (point-min))
                 (icalendar--read-element nil nil))))
@@ -210,7 +218,7 @@
 ;;; gnus-icalendar-event-reply
 ;;;
 
-(defun gnus-icalendar-event--build-reply-event-body (ical-request status identity)
+(defun gnus-icalendar-event--build-reply-event-body (ical-request status identities)
   (let ((summary-status (capitalize (symbol-name status)))
         (attendee-status (upcase (symbol-name status)))
         reply-event-lines)
@@ -222,7 +230,7 @@
                    (format-time-string "DTSTAMP:%Y%m%dT%H%M%SZ" nil t))
                  (attendee-matches-identity (line)
                    (gnus-icalendar-find-if (lambda (name) (string-match-p name line))
-                                           identity))
+                                           identities))
                  (update-attendee-status (line)
                    (when (and (attendee-matches-identity line)
                               (string-match "\\(PARTSTAT=\\)[^;]+" line))
@@ -255,11 +263,11 @@
                               "END:VEVENT")
                  "\n"))))
 
-(defun gnus-icalendar-event-reply-from-buffer (buf status identity)
+(defun gnus-icalendar-event-reply-from-buffer (buf status identities)
   "Build a calendar event reply for request contained in BUF.
 The reply will have STATUS (`accepted', `tentative' or  `declined').
 The reply will be composed for attendees matching any entry
-on the IDENTITY list."
+on the IDENTITIES list."
   (gmm-flet ((extract-block (blockname)
                (save-excursion
                  (let ((block-start-re (format "^BEGIN:%s" blockname))
@@ -282,7 +290,7 @@ on the IDENTITY list."
                               "PRODID:Gnus"
                               "VERSION:2.0"
                               zone
-                              (gnus-icalendar-event--build-reply-event-body event status identity)
+                              (gnus-icalendar-event--build-reply-event-body event status identities)
                               "END:VCALENDAR")))
 
           (mapconcat #'identity (delq nil contents) "\n"))))))
