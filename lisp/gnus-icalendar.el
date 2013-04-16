@@ -546,12 +546,12 @@ Return nil for non-recurring EVENT."
 ;;;
 
 (defgroup gnus-icalendar nil
-  "Settings for inline display of iCalendar events."
+  "Settings for inline display of iCalendar invitations."
   :group 'gnus-article
   :prefix "gnus-icalendar-")
 
 (defcustom gnus-icalendar-reply-bufname "*CAL*"
-  "Buffer used for building iCalendar reply."
+  "Buffer used for building iCalendar invitation reply."
   :type '(string)
   :group 'gnus-icalendar)
 
@@ -594,7 +594,7 @@ Return nil for non-recurring EVENT."
        "\n"
        description))))
 
-(defmacro with-decoded-handle (handle &rest body)
+(defmacro gnus-icalendar-with-decoded-handle (handle &rest body)
   "Execute BODY in buffer containing the decoded contents of HANDLE."
   (let ((charset (make-symbol "charset")))
     `(let ((,charset (cdr (assoc 'charset (mm-handle-type ,handle)))))
@@ -607,7 +607,7 @@ Return nil for non-recurring EVENT."
 
 
 (defun gnus-icalendar-event-from-handle (handle &optional attendee-name-or-email)
-  (with-decoded-handle handle
+  (gnus-icalendar-with-decoded-handle handle
                        (gnus-icalendar-event-from-buffer (current-buffer) attendee-name-or-email)))
 
 (defun gnus-icalendar-insert-button (text callback data)
@@ -643,9 +643,9 @@ Return nil for non-recurring EVENT."
   (let* ((handle (car data))
          (status (cadr data))
          (event (caddr data))
-         (reply (with-decoded-handle handle
-                                     (gnus-icalendar-event-reply-from-buffer (current-buffer)
-                                                                   status gnus-icalendar-identities))))
+         (reply (gnus-icalendar-with-decoded-handle handle
+                  (gnus-icalendar-event-reply-from-buffer
+                   (current-buffer) status gnus-icalendar-identities))))
 
     (when reply
       (gmm-flet ((fold-icalendar-buffer ()
