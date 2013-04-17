@@ -152,7 +152,7 @@
       (gnus-icalendar-find-if #'attendee-prop-matches-p event-props))))
 
 
-(defun icalendar->gnus-icalendar-event (ical &optional attendee-name-or-email)
+(defun gnus-icalendar-event-from-ical (ical &optional attendee-name-or-email)
   (let* ((event (car (icalendar--all-events ical)))
          (zone-map (icalendar--convert-all-timezones ical))
          (organizer (replace-regexp-in-string
@@ -212,7 +212,7 @@ status will be retrieved from the first matching attendee record."
                 (icalendar--read-element nil nil))))
 
     (when ical
-      (icalendar->gnus-icalendar-event ical attendee-name-or-email))))
+      (gnus-icalendar-event-from-ical ical attendee-name-or-email))))
 
 ;;;
 ;;; gnus-icalendar-event-reply
