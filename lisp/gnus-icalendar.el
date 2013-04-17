@@ -524,12 +524,12 @@ Return nil for non-recurring EVENT."
 (defun gnus-icalendar:org-event-reply-status (event)
   (gnus-icalendar--get-org-event-reply-status event gnus-icalendar-org-capture-file))
 
-(defmethod cal-event:sync-to-org ((event gnus-icalendar-event-request) reply-status)
+(defmethod gnus-icalendar-event:sync-to-org ((event gnus-icalendar-event-request) reply-status)
   (if (gnus-icalendar-org-event-exists-p (gnus-icalendar-event:uid event) gnus-icalendar-org-capture-file)
       (gnus-icalendar:org-event-update event reply-status)
     (gnus-icalendar:org-event-save event reply-status)))
 
-(defmethod cal-event:sync-to-org ((event gnus-icalendar-event-cancel))
+(defmethod gnus-icalendar-event:sync-to-org ((event gnus-icalendar-event-cancel))
   (when (gnus-icalendar-org-event-exists-p
          (gnus-icalendar-event:uid event) gnus-icalendar-org-capture-file)
     (gnus-icalendar:org-event-cancel event)))
@@ -671,29 +671,29 @@ Return nil for non-recurring EVENT."
               (gnus-summary-show-article))))))))
 
 (defun gnus-icalendar-sync-event-to-org (event)
-  (cal-event:sync-to-org event gnus-icalendar-reply-status))
+  (gnus-icalendar-event:sync-to-org event gnus-icalendar-reply-status))
 
-(defmethod gnus-icalendar:inline-reply-buttons ((event gnus-icalendar-event))
+(defmethod gnus-icalendar-event:inline-reply-buttons ((event gnus-icalendar-event))
   (when (gnus-icalendar-event:rsvp event)
     `(("Accept" gnus-icalendar-reply (,handle accepted ,event))
       ("Tentative" gnus-icalendar-reply (,handle tentative ,event))
       ("Decline" gnus-icalendar-reply (,handle declined ,event)))))
 
-(defmethod gnus-icalendar:inline-reply-buttons ((event gnus-icalendar-event-reply))
+(defmethod gnus-icalendar-event:inline-reply-buttons ((event gnus-icalendar-event-reply))
   "No buttons for REPLY events."
   nil)
 
-(defmethod gnus-icalendar:inline-reply-status ((event gnus-icalendar-event))
+(defmethod gnus-icalendar-event:inline-reply-status ((event gnus-icalendar-event))
   (or (when gnus-icalendar-org-enabled-p
         (gnus-icalendar:org-event-reply-status event))
       "Not replied yet"))
 
-(defmethod gnus-icalendar:inline-reply-status ((event gnus-icalendar-event-reply))
+(defmethod gnus-icalendar-event:inline-reply-status ((event gnus-icalendar-event-reply))
   "No reply status for REPLY events."
   nil)
 
 
-(defmethod gnus-icalendar:inline-org-buttons ((event gnus-icalendar-event))
+(defmethod gnus-icalendar-event:inline-org-buttons ((event gnus-icalendar-event))
   (let* ((org-entry-exists-p (gnus-icalendar:org-entry-exists-p event))
          (export-button-text (if org-entry-exists-p "Update Org Entry" "Export to Org")))
 
@@ -718,24 +718,24 @@ Return nil for non-recurring EVENT."
                            buttons)
                      (insert "\n\n"))))
 
-        (insert-button-group (gnus-icalendar:inline-reply-buttons event))
+        (insert-button-group (gnus-icalendar-event:inline-reply-buttons event))
 
         (when gnus-icalendar-org-enabled-p
-          (insert-button-group (gnus-icalendar:inline-org-buttons event)))
+          (insert-button-group (gnus-icalendar-event:inline-org-buttons event)))
 
         (setq gnus-icalendar-event event
               gnus-icalendar-handle handle)
 
         (insert (gnus-icalendar-event->gnus-calendar
                  event
-                 (gnus-icalendar:inline-reply-status event)))))))
+                 (gnus-icalendar-event:inline-reply-status event)))))))
 
 (defun gnus-icalendar-save-part (handle)
   (let (event)
     (when (and (equal (car (mm-handle-type handle)) "text/calendar")
                (setq event (gnus-icalendar-event-from-handle handle gnus-icalendar-identities)))
 
-      (cal-event:sync-to-org event))))
+      (gnus-icalendar-event:sync-to-org event))))
 
 
 (defun gnus-icalendar-save-event ()
