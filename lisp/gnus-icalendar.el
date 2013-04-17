@@ -574,25 +574,26 @@ Return nil for non-recurring EVENT."
 ;; TODO: make the template customizable
 (defmethod gnus-icalendar-event->gnus-calendar ((event gnus-icalendar-event) &optional reply-status)
   "Format an overview of EVENT details."
-  (with-slots (organizer summary description location recur uid method rsvp) event
-    (let ((headers `(("Summary" ,summary)
-                     ("Location" ,location)
-                     ("Time" ,(gnus-icalendar-event:org-timestamp event))
-                     ("Organizer" ,organizer)
-                     ("Method" ,method))))
+  (gmm-flet ((format-header (x)
+               (format "%-12s%s"
+                       (propertize (concat (car x) ":") 'face 'bold)
+                       (cadr x))))
 
-      (when (and (not (gnus-icalendar-event-reply-p event)) rsvp)
-        (setq headers (append headers
-                              `(("Status" ,(or reply-status "Not replied yet"))))))
+    (with-slots (organizer summary description location recur uid method rsvp) event
+      (let ((headers `(("Summary" ,summary)
+                      ("Location" ,location)
+                      ("Time" ,(gnus-icalendar-event:org-timestamp event))
+                      ("Organizer" ,organizer)
+                      ("Method" ,method))))
 
-      (concat
-       (apply #'concat (mapcar (lambda (x)
-                                 (format "%-12s%s\n"
-                                         (propertize (concat (car x) ":") 'face 'bold)
-                                         (cadr x)))
-                               headers))
-       "\n"
-       description))))
+       (when (and (not (gnus-icalendar-event-reply-p event)) rsvp)
+         (setq headers (append headers
+                               `(("Status" ,(or reply-status "Not replied yet"))))))
+
+       (concat
+        (mapconcat #'format-header headers "\n")
+        "\n\n"
+        description)))))
 
 (defmacro gnus-icalendar-with-decoded-handle (handle &rest body)
   "Execute BODY in buffer containing the decoded contents of HANDLE."
