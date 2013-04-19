@@ -32,9 +32,11 @@
 
 
 (defun gnus-icalendar-find-if (pred seq)
-  (when seq
-    (or (when (funcall pred (car seq)) (car seq))
-        (gnus-icalendar-find-if pred (cdr seq)))))
+  (catch 'found
+    (while seq
+      (when (funcall pred (car seq))
+        (throw 'found (car seq)))
+      (pop seq))))
 
 ;;;
 ;;; ical-event
