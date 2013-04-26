@@ -398,18 +398,38 @@ Return nil for non-recurring EVENT."
                             (lambda (m) (pcase m ("<" "[") (">" "]")))
                             ts))
 
+(defun gnus-icalendar-find-org-event-file (event &optional org-file)
+  "Return the name of the file containing EVENT org entry.
+Return nil when not found.
+
+All org agenda files are searched for the EVENT entry.  When
+the optional ORG-FILE argument is specified, only that one file
+is searched."
+  (let ((uid (gnus-icalendar-event:uid event))
+        (files (or org-file (org-agenda-files nil 'ifmode))))
+    (gmm-flet
+        ((find-event-in (file)
+           (org-check-agenda-file file)
+           (with-current-buffer (find-file-noselect file)
+             (let ((event-pos (org-find-entry-with-id uid)))
+               (when (and event-pos
+                          (string= (cdr (assoc "ICAL_EVENT" (org-entry-properties event-pos)))
+                                   "t"))
+                 (throw 'found file))))))
+
+      (gnus-icalendar-find-if #'find-event-in files))))
+
+
 (defun gnus-icalendar--show-org-event (event &optional org-file)
-  (let ((capture-file (or org-file gnus-icalendar-org-capture-file))
-        event-pos)
-    (with-current-buffer (find-file-noselect capture-file)
-      (setq event-pos (org-find-entry-with-id (gnus-icalendar-event:uid event))))
-    (when event-pos
-      (switch-to-buffer (find-file capture-file))
-      (goto-char event-pos)
+  (let ((file (gnus-icalendar-find-org-event-file event org-file)))
+    (when file
+      (switch-to-buffer (find-file file))
+      (goto-char (org-find-entry-with-id (gnus-icalendar-event:uid event)))
       (org-show-entry))))
 
+
 (defun gnus-icalendar--update-org-event (event reply-status &optional org-file)
-  (with-current-buffer (find-file-noselect (or org-file gnus-icalendar-org-capture-file))
+  (with-current-buffer (find-file-noselect (gnus-icalendar-find-org-event-file event org-file))
     (with-slots (uid summary description organizer location recur) event
       (let ((event-pos (org-find-entry-with-id uid)))
         (when event-pos
@@ -435,6 +455,9 @@ Return nil for non-recurring EVENT."
             (save-restriction
               (org-narrow-to-element)
               (forward-line)
+              ;; FIXME: this doesn't really match all valid org-drawer
+              ;;contents, need better way of identifying the whole org drawer
+              ;;block
               (re-search-forward "^ *[^: ]" entry-end)
               (delete-region (point) entry-end))
 
@@ -451,8 +474,9 @@ Return nil for non-recurring EVENT."
                                               (capitalize (symbol-name reply-status))))
             (save-buffer)))))))
 
+
 (defun gnus-icalendar--cancel-org-event (event &optional org-file)
-  (with-current-buffer (find-file-noselect (or org-file gnus-icalendar-org-capture-file))
+  (with-current-buffer (find-file-noselect (gnus-icalendar-find-org-event-file event org-file))
     (let ((event-pos (org-find-entry-with-id (gnus-icalendar-event:uid event))))
       (when event-pos
         (let ((ts (org-entry-get event-pos "DT")))
@@ -460,22 +484,15 @@ Return nil for non-recurring EVENT."
             (org-entry-put event-pos "DT" (gnus-icalendar--deactivate-org-timestamp ts))
             (save-buffer)))))))
 
+
 (defun gnus-icalendar--get-org-event-reply-status (event &optional org-file)
-  (let ((capture-file (or org-file gnus-icalendar-org-capture-file)))
-    (when (gnus-icalendar-org-event-exists-p event capture-file)
+  (let ((file (gnus-icalendar-find-org-event-file event org-file)))
+    (when file
       (save-excursion
-        (with-current-buffer (find-file-noselect capture-file)
+        (with-current-buffer (find-file-noselect file)
           (let ((event-pos (org-find-entry-with-id (gnus-icalendar-event:uid event))))
             (org-entry-get event-pos "REPLY")))))))
 
-(defun gnus-icalendar-org-event-exists-p (event &optional org-file)
-  "Return t when given event ID exists in ORG-FILE."
-  (save-excursion
-    (with-current-buffer (find-file-noselect (or org-file gnus-icalendar-org-capture-file))
-      (let ((event-pos (org-find-entry-with-id (gnus-icalendar-event:uid event))))
-        (when event-pos
-          (string= (cdr (assoc "ICAL_EVENT" (org-entry-properties event-pos)))
-                   "t"))))))
 
 (defun gnus-icalendar-insinuate-org-templates ()
   (unless (gnus-icalendar-find-if (lambda (x) (string= (cadr x) gnus-icalendar-org-template-name))
@@ -512,12 +529,12 @@ Return nil for non-recurring EVENT."
     (org-agenda-list nil (gnus-icalendar-event:start event) duration-days)))
 
 (defmethod gnus-icalendar-event:sync-to-org ((event gnus-icalendar-event-request) reply-status)
-  (if (gnus-icalendar-org-event-exists-p event)
+  (if (gnus-icalendar-find-org-event-file event)
       (gnus-icalendar--update-org-event event reply-status)
     (gnus-icalendar:org-event-save event reply-status)))
 
 (defmethod gnus-icalendar-event:sync-to-org ((event gnus-icalendar-event-cancel))
-  (when (gnus-icalendar-org-event-exists-p event)
+  (when (gnus-icalendar-find-org-event-file event)
     (gnus-icalendar--cancel-org-event event)))
 
 (defun gnus-icalendar-org-setup ()
@@ -681,7 +698,7 @@ Return nil for non-recurring EVENT."
 
 
 (defmethod gnus-icalendar-event:inline-org-buttons ((event gnus-icalendar-event))
-  (let* ((org-entry-exists-p (gnus-icalendar-org-event-exists-p event))
+  (let* ((org-entry-exists-p (gnus-icalendar-find-org-event-file event))
          (export-button-text (if org-entry-exists-p "Update Org Entry" "Export to Org")))
 
     (delq nil (list
