@@ -452,20 +452,22 @@ is searched."
           (let ((entry-end (org-entry-end-position))
                 (entry-outline-level (org-outline-level)))
 
+            ;; delete body of the entry, leave org drawers intact
             (save-restriction
               (org-narrow-to-element)
+              (goto-char entry-end)
+              (re-search-backward "^[\t ]*:END:")
               (forward-line)
-              ;; FIXME: this doesn't really match all valid org-drawer
-              ;;contents, need better way of identifying the whole org drawer
-              ;;block
-              (re-search-forward "^ *[^: ]" entry-end)
               (delete-region (point) entry-end))
 
+            ;; put new event description in the entry body
             (save-restriction
               (narrow-to-region (point) (point))
-              (insert description "\n")
+              (insert "\n" (replace-regexp-in-string "[\n]+$" "\n" description) "\n")
               (indent-region (point-min) (point-max) (1+ entry-outline-level))
               (fill-region (point-min) (point-max)))
+
+            ;; update entry properties
             (org-entry-put event-pos "DT" (gnus-icalendar-event:org-timestamp event))
             (org-entry-put event-pos "ORGANIZER" organizer)
             (org-entry-put event-pos "LOCATION" location)
