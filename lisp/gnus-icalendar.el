@@ -20,6 +20,7 @@
 
 ;;; Commentary:
 
+;; To install:
 ;; (require 'gmm-utils) ;; gmm-flet not in emacs
                                         ;; proper yet
 ;; (require 'gnus-icalendar)
