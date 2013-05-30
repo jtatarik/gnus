@@ -417,7 +417,7 @@ All org agenda files are searched for the EVENT entry.  When
 the optional ORG-FILE argument is specified, only that one file
 is searched."
   (let ((uid (gnus-icalendar-event:uid event))
-        (files (or org-file (org-agenda-files nil 'ifmode))))
+        (files (or org-file (org-agenda-files t 'ifmode))))
     (gmm-flet
         ((find-event-in (file)
            (org-check-agenda-file file)
