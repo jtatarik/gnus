@@ -396,11 +396,12 @@ Return nil for non-recurring EVENT."
                 (org-entry-put (point) (car prop) (cdr prop)))
               props))
 
-      (save-restriction
-        (narrow-to-region (point) (point))
-        (insert description)
-        (indent-region (point-min) (point-max) 2)
-        (fill-region (point-min) (point-max)))
+      (when description
+        (save-restriction
+          (narrow-to-region (point) (point))
+          (insert description)
+          (indent-region (point-min) (point-max) 2)
+          (fill-region (point-min) (point-max))))
 
       (buffer-string))))
 
@@ -474,11 +475,12 @@ is searched."
                   (delete-region (point) entry-end))
 
                 ;; put new event description in the entry body
-                (save-restriction
-                  (narrow-to-region (point) (point))
-                  (insert "\n" (replace-regexp-in-string "[\n]+$" "\n" description) "\n")
-                  (indent-region (point-min) (point-max) (1+ entry-outline-level))
-                  (fill-region (point-min) (point-max)))
+                (when description
+                  (save-restriction
+                    (narrow-to-region (point) (point))
+                    (insert "\n" (replace-regexp-in-string "[\n]+$" "\n" description) "\n")
+                    (indent-region (point-min) (point-max) (1+ entry-outline-level))
+                    (fill-region (point-min) (point-max))))
 
                 ;; update entry properties
                 (org-entry-put event-pos "DT" (gnus-icalendar-event:org-timestamp event))
