@@ -650,7 +650,9 @@ is searched."
     (with-current-buffer gnus-summary-buffer
       (gnus-summary-reply)
       (message-goto-body)
-      (mml-attach-buffer buffer-name "text/calendar; method=REPLY; charset=UTF-8" nil "inline")
+      (mml-insert-multipart "alternative")
+      (mml-insert-empty-tag 'part 'type "text/plain")
+      (mml-attach-buffer buffer-name "text/calendar; method=REPLY; charset=UTF-8")
       (message-goto-subject)
       (delete-region (line-beginning-position) (line-end-position))
       (insert "Subject: " subject)
