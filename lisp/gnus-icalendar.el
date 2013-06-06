@@ -440,62 +440,66 @@ is searched."
 
 
 (defun gnus-icalendar--update-org-event (event reply-status &optional org-file)
-  (with-current-buffer (find-file-noselect (gnus-icalendar-find-org-event-file event org-file))
-    (with-slots (uid summary description organizer location recur) event
-      (let ((event-pos (org-find-entry-with-id uid)))
-        (when event-pos
-          (goto-char event-pos)
+  (let ((file (gnus-icalendar-find-org-event-file event org-file)))
+    (when file
+      (with-current-buffer (find-file-noselect file)
+        (with-slots (uid summary description organizer location recur) event
+          (let ((event-pos (org-find-entry-with-id uid)))
+            (when event-pos
+              (goto-char event-pos)
 
-          ;; update the headline, keep todo, priority and tags, if any
-          (save-excursion
-            (let* ((priority (org-entry-get (point) "PRIORITY"))
-                   (headline (delq nil (list
-                                        (org-entry-get (point) "TODO")
-                                        (when priority (format "[#%s]" priority))
-                                        (format "%s (%s)" summary location)
-                                        (org-entry-get (point) "TAGS")))))
+              ;; update the headline, keep todo, priority and tags, if any
+              (save-excursion
+                (let* ((priority (org-entry-get (point) "PRIORITY"))
+                       (headline (delq nil (list
+                                            (org-entry-get (point) "TODO")
+                                            (when priority (format "[#%s]" priority))
+                                            (format "%s (%s)" summary location)
+                                            (org-entry-get (point) "TAGS")))))
 
-              (re-search-forward "^\\*+ " (line-end-position))
-              (delete-region (point) (line-end-position))
-              (insert (mapconcat #'identity headline " "))))
+                  (re-search-forward "^\\*+ " (line-end-position))
+                  (delete-region (point) (line-end-position))
+                  (insert (mapconcat #'identity headline " "))))
 
-          ;; update props and description
-          (let ((entry-end (org-entry-end-position))
-                (entry-outline-level (org-outline-level)))
+              ;; update props and description
+              (let ((entry-end (org-entry-end-position))
+                    (entry-outline-level (org-outline-level)))
 
-            ;; delete body of the entry, leave org drawers intact
-            (save-restriction
-              (org-narrow-to-element)
-              (goto-char entry-end)
-              (re-search-backward "^[\t ]*:END:")
-              (forward-line)
-              (delete-region (point) entry-end))
+                ;; delete body of the entry, leave org drawers intact
+                (save-restriction
+                  (org-narrow-to-element)
+                  (goto-char entry-end)
+                  (re-search-backward "^[\t ]*:END:")
+                  (forward-line)
+                  (delete-region (point) entry-end))
 
-            ;; put new event description in the entry body
-            (save-restriction
-              (narrow-to-region (point) (point))
-              (insert "\n" (replace-regexp-in-string "[\n]+$" "\n" description) "\n")
-              (indent-region (point-min) (point-max) (1+ entry-outline-level))
-              (fill-region (point-min) (point-max)))
+                ;; put new event description in the entry body
+                (save-restriction
+                  (narrow-to-region (point) (point))
+                  (insert "\n" (replace-regexp-in-string "[\n]+$" "\n" description) "\n")
+                  (indent-region (point-min) (point-max) (1+ entry-outline-level))
+                  (fill-region (point-min) (point-max)))
 
-            ;; update entry properties
-            (org-entry-put event-pos "DT" (gnus-icalendar-event:org-timestamp event))
-            (org-entry-put event-pos "ORGANIZER" organizer)
-            (org-entry-put event-pos "LOCATION" location)
-            (org-entry-put event-pos "RRULE" recur)
-            (when reply-status (org-entry-put event-pos "REPLY"
-                                              (capitalize (symbol-name reply-status))))
-            (save-buffer)))))))
+                ;; update entry properties
+                (org-entry-put event-pos "DT" (gnus-icalendar-event:org-timestamp event))
+                (org-entry-put event-pos "ORGANIZER" organizer)
+                (org-entry-put event-pos "LOCATION" location)
+                (org-entry-put event-pos "RRULE" recur)
+                (when reply-status (org-entry-put event-pos "REPLY"
+                                                  (capitalize (symbol-name reply-status))))
+                (save-buffer)))))))))
 
 
 (defun gnus-icalendar--cancel-org-event (event &optional org-file)
-  (with-current-buffer (find-file-noselect (gnus-icalendar-find-org-event-file event org-file))
-    (let ((event-pos (org-find-entry-with-id (gnus-icalendar-event:uid event))))
-      (when event-pos
-        (let ((ts (org-entry-get event-pos "DT")))
-          (when ts
-            (org-entry-put event-pos "DT" (gnus-icalendar--deactivate-org-timestamp ts))
-            (save-buffer)))))))
+  (let ((file (gnus-icalendar-find-org-event-file event org-file)))
+    (when file
+      (with-current-buffer (find-file-noselect file)
+        (let ((event-pos (org-find-entry-with-id (gnus-icalendar-event:uid event))))
+          (when event-pos
+            (let ((ts (org-entry-get event-pos "DT")))
+              (when ts
+                (org-entry-put event-pos "DT" (gnus-icalendar--deactivate-org-timestamp ts))
+                (save-buffer)))))))))
 
 
 (defun gnus-icalendar--get-org-event-reply-status (event &optional org-file)
