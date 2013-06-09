@@ -46,7 +46,7 @@ modify this GNU manual.''
 \begin{document}
 
 % Adjust ../Makefile.in if you change the following line:
-\newcommand{\gnusversionname}{Ma Gnus v0.6}
+\newcommand{\gnusversionname}{Ma Gnus v0.8}
 \newcommand{\gnuschaptername}{}
 \newcommand{\gnussectionname}{}
 
@@ -357,7 +357,7 @@ spool or your mbox file.  All at the same time, if you want to push your
 luck.
 
 @c Adjust ../Makefile.in if you change the following line:
-This manual corresponds to Ma Gnus v0.6
+This manual corresponds to Ma Gnus v0.8
 
 @ifnottex
 @insertcopying
@@ -391,7 +391,7 @@ people should be empowered to do what they want by using (or abusing)
 the program.
 
 @c Adjust ../Makefile.in if you change the following line:
-This manual corresponds to Ma Gnus v0.6
+This manual corresponds to Ma Gnus v0.8
 
 @heading Other related manuals
 @itemize
@@ -9517,18 +9517,9 @@ Say how much time has elapsed between the article was posted and now
 Date: 6 weeks, 4 days, 1 hour, 3 minutes, 8 seconds ago
 @end example
 
-This line is updated continually by default.  The frequency (in
-seconds) is controlled by the @code{gnus-article-update-date-headers}
-variable.
-
-If you wish to switch updating off, say:
-
-@vindex gnus-article-update-date-headers
-@lisp
-(setq gnus-article-update-date-headers nil)
-@end lisp
-
-in your @file{~/.gnus.el} file.
+To make this line updated continually, set the
+@code{gnus-article-update-date-headers} variable to the frequency in
+seconds (the default is @code{nil}).
 
 @item W T o
 @kindex W T o (Summary)
@@ -15401,7 +15392,7 @@ substitutions in the group names), you can say things like:
 In this example, messages sent to @samp{debian-foo@@lists.debian.org}
 will be filed in @samp{mail.debian.foo}.
 
-If the string contains the element @samp{\&}, then the previously
+If the string contains the element @samp{\\&}, then the previously
 matched string will be substituted.  Similarly, the elements @samp{\\1}
 up to @samp{\\9} will be substituted with the text matched by the
 groupings 1 through 9.
@@ -28889,7 +28880,7 @@ Gnus will work.
 @item
 Try doing an @kbd{M-x gnus-version}.  If you get something that looks
 like @c
-@samp{Ma Gnus v0.6} @c Adjust ../Makefile.in if you change this line!
+@samp{Ma Gnus v0.8} @c Adjust ../Makefile.in if you change this line!
 @c
 you have the right files loaded.  Otherwise you have some old @file{.el}
 files lying around.  Delete these.

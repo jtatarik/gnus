@@ -538,7 +538,8 @@ instead."
 	(message-mail to subject other-headers continue
 		      nil yank-action send-actions return-action))
     (let ((buf (current-buffer))
-	  (gnus-newsgroup-name (or gnus-newsgroup-name ""))
+	  ;; Don't use posting styles corresponding to any existing group.
+	  (gnus-newsgroup-name "")
 	  mail-buf)
       (gnus-setup-message 'message
 	(message-mail to subject other-headers continue
@@ -1718,8 +1719,8 @@ this is a reply."
          (group (when group (gnus-group-decoded-name group)))
          (var (or gnus-outgoing-message-group gnus-message-archive-group))
 	 (gcc-self-val
-	  (and group (gnus-group-find-parameter group 'gcc-self)
-	       (not (gnus-virtual-group-p group))))
+	  (and group (not (gnus-virtual-group-p group))
+	       (gnus-group-find-parameter group 'gcc-self)))
 	 result
 	 (groups
 	  (cond
